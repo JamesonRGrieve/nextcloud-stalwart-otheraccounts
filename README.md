@@ -37,8 +37,9 @@ identical to `enroll_mailbox.py`, so existing enrollments are reconnected in pla
 | `semaphore_url`, `semaphore_token_path`, `semaphore_project`, `semaphore_template` | the runner and template |
 
 No token or OAuth secret is stored in Nextcloud. Everything except the AppRole credential is read
-from OpenBao at runtime. The Google OAuth client must list
-`https://<cloud>/apps/otheraccounts/google/callback` as an authorized redirect URI.
+from OpenBao at runtime. The Google OAuth client must list the callback as an authorized redirect
+URI, exactly as Nextcloud generates it: `https://<cloud>/index.php/apps/otheraccounts/google/callback`
+(drop `/index.php` only if pretty URLs are enabled).
 
 ## Development
 
