@@ -3,8 +3,10 @@
 
 Self-service enrollment of external mailboxes into a user's Stalwart mailbox. In **Personal
 settings → Other Accounts**, a user connects a Gmail / Google Workspace account (Google consent,
-PKCE, offline access) or any IMAP + SMTP account (login proven first). The account is then two-way
-synced into "Other Accounts/<label>" in their mailbox, and they can send as it.
+PKCE, offline access) or any IMAP + SMTP account (login proven first), choosing which mailbox to
+link it to: their own, or any mailbox whose netbox-email `shared_with` lists them (checked
+server-side on every request). The account is then two-way synced into "Other Accounts/<label>" in
+that mailbox, and its users can send as it.
 
 ## How it works
 
@@ -15,8 +17,8 @@ The app writes the same source of truth the pipeline reads, then runs the pipeli
 3. **NetBox**: the address is appended to the user's mailbox `send_as_addresses` (netbox-email). An
    address another mailbox owns is refused.
 4. **Converge**: a background job starts a Semaphore run of the zephyrex template, `-target`ed at that
-   label's resources (mailsync account/owner files, mbsyncrc, `stalwart_relay.external`, the route and
-   send-as expressions, the Nextcloud alias). It confirms only if every planned action is one of those
+   label's resources (mailsync account/owner files, the shared OAuth-client env, mbsyncrc,
+   `stalwart_relay.external`, the route and send-as expressions, the Nextcloud alias). It confirms only if every planned action is one of those
    targets, nothing is replaced, and nothing is destroyed except the label's own account file and
    relay when disconnecting. Any other plan is **rejected**, never left parked holding the runner, and
    the reason is shown to the user.

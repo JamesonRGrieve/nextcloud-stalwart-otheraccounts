@@ -15,9 +15,10 @@ use OCA\OtherAccounts\Service\OpenBao;
 
 /**
  * Writes the SoT the Stalwart converge reads for one external mailbox: the credential at
- * `<services>/external_<label>` in OpenBao and the address in the owning mailbox's
- * `send_as_addresses` in NetBox. A credential is proven before anything is stored, and an address
- * already owned by another mailbox is refused.
+ * `<services>/external_<label>` in OpenBao and the address in the target mailbox's
+ * `send_as_addresses` in NetBox. The target is a mailbox the user may use (their own, or one
+ * whose `shared_with` lists them). A credential is proven before anything is stored, and an
+ * address already owned by another mailbox is refused.
  */
 final readonly class Enrollment
 {
@@ -31,78 +32,82 @@ final readonly class Enrollment
         private MailProver $prover,
     ) {}
 
-    public function connectGoogle(EmailAddress $owner, EmailAddress $external, GoogleGrant $grant): ConvergeScope
+    public function connectGoogle(EmailAddress $user, EmailAddress $target, EmailAddress $external, GoogleGrant $grant): ConvergeScope
     {
-        $mailbox = $this->claim($owner, $external);
+        $mailbox = $this->claim($user, $target, $external);
         $this->prover->imapXoauth2(self::GOOGLE_IMAP_HOST, self::IMAPS_PORT, $external->value, $grant->accessToken);
         $label = Label::forAddress($external);
         $this->bao->write($this->path($label), ['email' => $external->value, 'refresh_token' => $grant->refreshToken]);
         $this->mailboxes->setSendAs($mailbox, $mailbox->withSendAs($external));
 
-        return ConvergeScope::connect($label, $owner);
+        return ConvergeScope::connect($label, $mailbox->address);
     }
 
-    public function connectImap(EmailAddress $owner, EmailAddress $external, ImapCredential $credential): ConvergeScope
+    public function connectImap(EmailAddress $user, EmailAddress $target, EmailAddress $external, ImapCredential $credential): ConvergeScope
     {
-        $mailbox = $this->claim($owner, $external);
+        $mailbox = $this->claim($user, $target, $external);
         $this->prover->imapPassword($credential->imapHost, $credential->imapPort, $credential->username, $credential->password);
         $this->prover->smtpPassword($credential->smtpHost, $credential->smtpPort, $credential->username, $credential->password);
         $label = Label::forAddress($external);
         $this->bao->write($this->path($label), ['email' => $external->value, ...$credential->toSecret()]);
         $this->mailboxes->setSendAs($mailbox, $mailbox->withSendAs($external));
 
-        return ConvergeScope::connect($label, $owner);
+        return ConvergeScope::connect($label, $mailbox->address);
     }
 
-    public function disconnect(EmailAddress $owner, EmailAddress $external): ConvergeScope
+    public function disconnect(EmailAddress $user, EmailAddress $target, EmailAddress $external): ConvergeScope
     {
-        $mailbox = $this->ownMailbox($owner);
+        $mailbox = $this->usable($user, $target);
         if (!$mailbox->owns($external)) {
-            throw new EnrollmentException('That account is not connected to your mailbox.');
+            throw new EnrollmentException('That account is not connected to that mailbox.');
         }
         $label = Label::forAddress($external);
         $this->mailboxes->setSendAs($mailbox, $mailbox->withoutSendAs($external));
         $this->bao->destroy($this->path($label));
 
-        return ConvergeScope::disconnect($label, $owner);
+        return ConvergeScope::disconnect($label, $mailbox->address);
     }
 
-    /** @return list<ConnectedAccount> */
-    public function connected(EmailAddress $owner): array
+    /** @return list<MailboxAccounts> every mailbox the user may use, own mailbox first, with its accounts */
+    public function connected(EmailAddress $user): array
     {
-        $mailbox = $this->mailboxes->find($owner);
-        if ($mailbox === null) {
-            return [];
-        }
-        $accounts = [];
-        foreach ($mailbox->sendAs as $address) {
-            $external = EmailAddress::fromString($address);
-            $label = Label::forAddress($external);
-            $secret = $this->bao->read($this->path($label));
-            $accounts[] = new ConnectedAccount($external, $label, ConnectionKind::fromSecret($secret));
-        }
-
-        return $accounts;
+        return array_map(fn(Mailbox $mailbox): MailboxAccounts => new MailboxAccounts(
+            $mailbox->address,
+            $mailbox->address->equals($user),
+            array_map(fn(string $address): ConnectedAccount => $this->account(EmailAddress::fromString($address)), $mailbox->sendAs),
+        ), $this->mailboxes->usableBy($user));
     }
 
-    /** The user's own mailbox, refusing an address that another mailbox already owns. */
-    private function claim(EmailAddress $owner, EmailAddress $external): Mailbox
+    private function account(EmailAddress $external): ConnectedAccount
     {
-        if ($external->equals($owner)) {
-            throw new EnrollmentException('That is your own mailbox address.');
+        $label = Label::forAddress($external);
+
+        return new ConnectedAccount($external, $label, ConnectionKind::fromSecret($this->bao->read($this->path($label))));
+    }
+
+    /** The target mailbox, refusing one the user may not use or an address another mailbox owns. */
+    private function claim(EmailAddress $user, EmailAddress $target, EmailAddress $external): Mailbox
+    {
+        $mailbox = $this->usable($user, $target);
+        if ($external->equals($mailbox->address)) {
+            throw new EnrollmentException('That is the mailbox address itself.');
         }
-        $mailbox = $this->ownMailbox($owner);
         $current = $this->mailboxes->ownerOf($external);
-        if ($current !== null && !$current->address->equals($owner)) {
+        if ($current !== null && !$current->address->equals($mailbox->address)) {
             throw new EnrollmentException('That account is already connected to another mailbox.');
         }
 
         return $mailbox;
     }
 
-    private function ownMailbox(EmailAddress $owner): Mailbox
+    private function usable(EmailAddress $user, EmailAddress $target): Mailbox
     {
-        return $this->mailboxes->find($owner) ?? throw new EnrollmentException('Your Nextcloud email address has no mailbox.');
+        $mailbox = $this->mailboxes->find($target);
+        if ($mailbox === null || !$mailbox->usableBy($user)) {
+            throw new EnrollmentException('You cannot manage accounts for that mailbox.');
+        }
+
+        return $mailbox;
     }
 
     private function path(Label $label): string

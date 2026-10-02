@@ -34,6 +34,7 @@ final readonly class ConvergeScope
         return [
             "host_file.stalwart_mailsync_account[\"{$this->label->value}\"]",
             "host_file.stalwart_mailsync_owner[\"{$this->owner->value}\"]",
+            'host_file.stalwart_mailsync_common',
             'host_file.stalwart_mailsync_mbsyncrc',
             "stalwart_relay.external[\"{$this->label->value}\"]",
             'stalwart_mta_expression.outbound_route',

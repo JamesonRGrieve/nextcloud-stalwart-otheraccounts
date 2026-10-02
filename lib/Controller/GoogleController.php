@@ -62,16 +62,17 @@ final class GoogleController extends Controller
     /** @return Json */
     #[NoAdminRequired]
     #[UseSession]
-    public function start(string $email): JSONResponse
+    public function start(string $mailbox, string $email): JSONResponse
     {
         try {
             $address = EmailAddress::fromString($email);
+            $target = EmailAddress::fromString($mailbox);
         } catch (\InvalidArgumentException $e) {
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
         }
         $state = $this->random->generate(self::STATE_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
         $pkce = Pkce::generate();
-        $this->session->set(self::SESSION_KEY, ['state' => $state, 'verifier' => $pkce->verifier, 'email' => $address->value]);
+        $this->session->set(self::SESSION_KEY, ['state' => $state, 'verifier' => $pkce->verifier, 'email' => $address->value, 'mailbox' => $target->value]);
 
         return new JSONResponse(['url' => $this->google->authorizationUrl($address, $this->redirectUri(), $state, $pkce)]);
     }
@@ -82,7 +83,7 @@ final class GoogleController extends Controller
     #[UseSession]
     public function callback(string $state = '', string $code = '', string $error = ''): RedirectResponse
     {
-        /** @var array{state: string, verifier: string, email: string}|null $pending */
+        /** @var array{state: string, verifier: string, email: string, mailbox: string}|null $pending */
         $pending = $this->session->get(self::SESSION_KEY);
         $this->session->remove(self::SESSION_KEY);
         if ($pending === null || $state === '' || !hash_equals($pending['state'], $state)) {
@@ -93,7 +94,7 @@ final class GoogleController extends Controller
         }
         try {
             $grant = $this->google->exchange($code, $this->redirectUri(), Pkce::fromVerifier($pending['verifier']));
-            $scope = $this->enrollment->connectGoogle($this->owner->address(), EmailAddress::fromString($pending['email']), $grant);
+            $scope = $this->enrollment->connectGoogle($this->owner->address(), EmailAddress::fromString($pending['mailbox']), EmailAddress::fromString($pending['email']), $grant);
             $this->statuses->record($scope, ConvergeOutcome::queued());
             $this->jobs->add(ConvergeJob::class, ConvergeJob::arguments($scope));
 

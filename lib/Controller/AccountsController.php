@@ -16,6 +16,7 @@ use OCA\OtherAccounts\Enrollment\EmailAddress;
 use OCA\OtherAccounts\Enrollment\Enrollment;
 use OCA\OtherAccounts\Enrollment\EnrollmentException;
 use OCA\OtherAccounts\Enrollment\ImapCredential;
+use OCA\OtherAccounts\Enrollment\MailboxAccounts;
 use OCA\OtherAccounts\Mail\MailProtocolException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -44,23 +45,26 @@ final class AccountsController extends Controller
     public function index(): JSONResponse
     {
         return $this->guard(function (): JSONResponse {
-            $owner = $this->owner->address();
-            $accounts = array_map(fn(ConnectedAccount $a): array => [
-                ...$a->jsonSerialize(),
-                'status' => $this->statuses->latest(ConvergeScope::connect($a->label, $owner)),
-            ], $this->enrollment->connected($owner));
+            $mailboxes = array_map(fn(MailboxAccounts $m): array => [
+                'mailbox' => $m->mailbox->value,
+                'own' => $m->own,
+                'accounts' => array_map(fn(ConnectedAccount $a): array => [
+                    ...$a->jsonSerialize(),
+                    'status' => $this->statuses->latest(ConvergeScope::connect($a->label, $m->mailbox)),
+                ], $m->accounts),
+            ], $this->enrollment->connected($this->owner->address()));
 
-            return new JSONResponse(['mailbox' => $owner->value, 'accounts' => $accounts]);
+            return new JSONResponse(['mailboxes' => $mailboxes]);
         });
     }
 
     /** @return Json */
     #[NoAdminRequired]
-    public function connectImap(string $email, string $imapHost, int $imapPort, string $smtpHost, int $smtpPort, string $username, string $password): JSONResponse
+    public function connectImap(string $mailbox, string $email, string $imapHost, int $imapPort, string $smtpHost, int $smtpPort, string $username, string $password): JSONResponse
     {
-        return $this->guard(function () use ($email, $imapHost, $imapPort, $smtpHost, $smtpPort, $username, $password): JSONResponse {
+        return $this->guard(function () use ($mailbox, $email, $imapHost, $imapPort, $smtpHost, $smtpPort, $username, $password): JSONResponse {
             $credential = new ImapCredential($imapHost, $imapPort, $smtpHost, $smtpPort, $username, $password);
-            $scope = $this->enrollment->connectImap($this->owner->address(), EmailAddress::fromString($email), $credential);
+            $scope = $this->enrollment->connectImap($this->owner->address(), EmailAddress::fromString($mailbox), EmailAddress::fromString($email), $credential);
 
             return $this->queue($scope);
         });
@@ -68,9 +72,11 @@ final class AccountsController extends Controller
 
     /** @return Json */
     #[NoAdminRequired]
-    public function disconnect(string $email): JSONResponse
+    public function disconnect(string $mailbox, string $email): JSONResponse
     {
-        return $this->guard(fn(): JSONResponse => $this->queue($this->enrollment->disconnect($this->owner->address(), EmailAddress::fromString($email))));
+        return $this->guard(fn(): JSONResponse => $this->queue(
+            $this->enrollment->disconnect($this->owner->address(), EmailAddress::fromString($mailbox), EmailAddress::fromString($email)),
+        ));
     }
 
     /** @return Json */

@@ -43,12 +43,16 @@
 		return data;
 	}
 
-	async function disconnect(address) {
-		if (!window.confirm('Disconnect ' + address + '? Sync and send-as for it will stop.')) {
+	function targetMailbox() {
+		return document.getElementById('otheraccounts-mailbox').value;
+	}
+
+	async function disconnect(mailbox, address) {
+		if (!window.confirm('Disconnect ' + address + ' from ' + mailbox + '? Sync and send-as for it will stop.')) {
 			return;
 		}
 		try {
-			await call('POST', '/accounts/disconnect', { email: address });
+			await call('POST', '/accounts/disconnect', { mailbox, email: address });
 			flash('Disconnecting ' + address + '.', false);
 			await render();
 		} catch (e) {
@@ -56,7 +60,7 @@
 		}
 	}
 
-	function accountRow(account) {
+	function accountRow(mailbox, account) {
 		const item = el('li', undefined, 'otheraccounts-row');
 		item.appendChild(el('span', account.address, 'otheraccounts-address'));
 		const kind = account.kind === 'google' ? 'Google' : account.kind === 'imap' ? 'IMAP' : 'Needs reconnecting';
@@ -67,31 +71,53 @@
 			const reconnect = el('button', 'Reconnect');
 			reconnect.type = 'button';
 			reconnect.setAttribute('aria-label', 'Reconnect ' + account.address);
-			reconnect.addEventListener('click', () => startGoogle(account.address));
+			reconnect.addEventListener('click', () => startGoogle(mailbox, account.address));
 			item.appendChild(reconnect);
 		}
 		const remove = el('button', 'Disconnect');
 		remove.type = 'button';
-		remove.setAttribute('aria-label', 'Disconnect ' + account.address);
-		remove.addEventListener('click', () => disconnect(account.address));
+		remove.setAttribute('aria-label', 'Disconnect ' + account.address + ' from ' + mailbox);
+		remove.addEventListener('click', () => disconnect(mailbox, account.address));
 		item.appendChild(remove);
 		return item;
 	}
 
+	function mailboxSection(entry) {
+		const section = el('section', undefined, 'otheraccounts-mailbox');
+		section.appendChild(el('h4', entry.mailbox + (entry.own ? ' (your mailbox)' : ' (shared with you)')));
+		if (entry.accounts.length === 0) {
+			section.appendChild(el('p', 'No accounts linked.', 'otheraccounts-status'));
+		} else {
+			const list = el('ul');
+			list.replaceChildren(...entry.accounts.map((a) => accountRow(entry.mailbox, a)));
+			section.appendChild(list);
+		}
+		return section;
+	}
+
 	async function render() {
 		const list = document.getElementById('otheraccounts-list');
+		const picker = document.getElementById('otheraccounts-mailbox');
 		try {
 			const data = await call('GET', '/accounts');
-			list.replaceChildren(...data.accounts.map(accountRow));
-			document.getElementById('otheraccounts-empty').hidden = data.accounts.length > 0;
+			list.replaceChildren(...data.mailboxes.map(mailboxSection));
+			const selected = picker.value;
+			picker.replaceChildren(...data.mailboxes.map((m) => {
+				const option = el('option', m.mailbox + (m.own ? ' (your mailbox)' : ' (shared)'));
+				option.value = m.mailbox;
+				return option;
+			}));
+			if (selected && data.mailboxes.some((m) => m.mailbox === selected)) {
+				picker.value = selected;
+			}
 		} catch (e) {
 			flash(e.message, true);
 		}
 	}
 
-	async function startGoogle(email) {
+	async function startGoogle(mailbox, email) {
 		try {
-			const data = await call('POST', '/google/start', { email });
+			const data = await call('POST', '/google/start', { mailbox, email });
 			window.location.assign(data.url);
 		} catch (e) {
 			flash(e.message, true);
@@ -108,7 +134,7 @@
 
 		document.getElementById('otheraccounts-google').addEventListener('submit', (event) => {
 			event.preventDefault();
-			startGoogle(new FormData(event.target).get('email'));
+			startGoogle(targetMailbox(), new FormData(event.target).get('email'));
 		});
 
 		document.getElementById('otheraccounts-imap').addEventListener('submit', async (event) => {
@@ -117,6 +143,7 @@
 			const email = form.get('email');
 			try {
 				await call('POST', '/accounts/imap', {
+					mailbox: targetMailbox(),
 					email,
 					username: form.get('username') || email,
 					password: form.get('password'),

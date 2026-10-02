@@ -11,8 +11,13 @@ declare(strict_types=1);
     <p id="otheraccounts-flash" role="status" aria-live="polite"></p>
 
     <h3>Connected accounts</h3>
-    <ul id="otheraccounts-list" aria-describedby="otheraccounts-empty"></ul>
-    <p id="otheraccounts-empty">No accounts connected yet.</p>
+    <div id="otheraccounts-list"></div>
+
+    <h3>Link a new account</h3>
+    <p>
+        <label for="otheraccounts-mailbox">Link to mailbox</label>
+        <select id="otheraccounts-mailbox" name="mailbox" required></select>
+    </p>
 
     <h3>Connect a Google account</h3>
     <form id="otheraccounts-google">

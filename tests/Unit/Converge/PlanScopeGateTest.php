@@ -69,6 +69,15 @@ final class PlanScopeGateTest extends TestCase
         self::assertTrue((new PlanScopeGate())->evaluate($plan, self::scope(true))->apply);
     }
 
+    public function testTheSharedOauthClientEnvMayBeUpdatedButNeverDestroyed(): void
+    {
+        $update = "  # host_file.stalwart_mailsync_common will be updated in-place\nPlan: 0 to add, 1 to change, 0 to destroy.";
+        $destroy = "  # host_file.stalwart_mailsync_common will be destroyed\nPlan: 0 to add, 0 to change, 1 to destroy.";
+
+        self::assertTrue((new PlanScopeGate())->evaluate($update, self::scope())->apply);
+        self::assertFalse((new PlanScopeGate())->evaluate($destroy, self::scope(true))->apply);
+    }
+
     public function testDisconnectStillRefusesDestroyingSharedResources(): void
     {
         $plan = "  # stalwart_mta_expression.outbound_route will be destroyed\nPlan: 0 to add, 0 to change, 1 to destroy.";

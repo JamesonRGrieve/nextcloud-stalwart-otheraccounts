@@ -6,7 +6,7 @@
     <name>Other Accounts</name>
     <summary>Connect your external mailboxes (Gmail, Google Workspace, IMAP) to your mailbox</summary>
     <description>Self-service enrollment of external mailboxes: sign in with Google or enter an IMAP login, and the account is two-way synced into "Other Accounts" in your mailbox, with send-as.</description>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <licence>agpl</licence>
     <author>Jameson</author>
     <namespace>OtherAccounts</namespace>

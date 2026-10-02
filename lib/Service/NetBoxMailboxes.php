@@ -51,10 +51,19 @@ final readonly class NetBoxMailboxes
     {
         $response = $this->call('GET', self::MAILBOXES . '?limit=' . self::PAGE_LIMIT);
         $this->expectOk($response, 'mailbox listing');
-        /** @var array{results: list<array{id: int, local_part: string, domain: array{name: string}, send_as_addresses: list<string>}>} $body */
+        /** @var array{results: list<array{id: int, local_part: string, domain: array{name: string}, send_as_addresses: list<string>, shared_with?: list<string>}>} $body */
         $body = $response->json();
 
         return array_map(Mailbox::fromRow(...), $body['results']);
+    }
+
+    /** @return list<Mailbox> the user's own mailbox first, then every mailbox shared with them */
+    public function usableBy(EmailAddress $user): array
+    {
+        $usable = array_values(array_filter($this->all(), static fn(Mailbox $m): bool => $m->usableBy($user)));
+        usort($usable, static fn(Mailbox $a, Mailbox $b): int => [!$a->address->equals($user), $a->address->value] <=> [!$b->address->equals($user), $b->address->value]);
+
+        return $usable;
     }
 
     /** @param list<string> $sendAs */
