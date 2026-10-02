@@ -1,5 +1,5 @@
 {
-    "name": "jamesonrgrieve/nextcloud-otheraccounts",
+    "name": "jamesonrgrieve/nextcloud-stalwart-otheraccounts",
     "description": "Nextcloud app: self-service enrollment of external mailboxes (Google XOAUTH2 or IMAP) into a user's Stalwart mailbox via OpenBao, NetBox and Semaphore",
     "type": "project",
     "license": "AGPL-3.0-or-later",

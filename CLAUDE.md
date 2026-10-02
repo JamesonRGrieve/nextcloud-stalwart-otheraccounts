@@ -1,4 +1,4 @@
-# nextcloud-otheraccounts — Agent Operating Guide
+# nextcloud-stalwart-otheraccounts — Agent Operating Guide
 
 AGPL-3.0 Nextcloud 34 app (`otheraccounts`): self-service enrollment of external mailboxes into a
 user's Stalwart mailbox. See README.md for the flow and configuration. Follow the workspace
