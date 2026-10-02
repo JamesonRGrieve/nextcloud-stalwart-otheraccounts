@@ -1,0 +1,7 @@
+/vendor/
+/.php-cs-fixer.cache
+/.phpunit.cache/
+/build/
+/.composer-cache/
+/.phpunit.result.cache
+/.subversion/

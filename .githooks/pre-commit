@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Pre-commit gate (php.md §11): lint, formatter (zero diff), PHPStan max, full PHPUnit suite.
+# Runs inside the composer container via scripts/dev.sh, so no host PHP is needed.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+for gate in lint cs:check stan test; do
+  echo "pre-commit: ${gate}"
+  if ! "$ROOT/scripts/dev.sh" run "$gate" >/tmp/otheraccounts-precommit-"${gate/:/-}".log 2>&1; then
+    echo "pre-commit: ${gate} FAILED — see /tmp/otheraccounts-precommit-${gate/:/-}.log" >&2
+    exit 1
+  fi
+done
+echo "pre-commit: OK"

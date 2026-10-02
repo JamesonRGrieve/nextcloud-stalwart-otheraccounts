@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         beStrictAboutOutputDuringTests="true">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>lib/Enrollment</directory>
+            <directory>lib/Converge</directory>
+            <directory>lib/Service</directory>
+            <directory>lib/Mail</directory>
+            <directory>lib/Http</directory>
+        </include>
+        <exclude>
+            <file>lib/Http/NextcloudHttpClient.php</file>
+            <file>lib/Mail/SocketChannelFactory.php</file>
+            <file>lib/Converge/SystemClock.php</file>
+        </exclude>
+    </source>
+</phpunit>

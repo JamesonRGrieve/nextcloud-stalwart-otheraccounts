@@ -1,0 +1,39 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+#otheraccounts form {
+	display: grid;
+	grid-template-columns: minmax(12rem, max-content) minmax(14rem, 24rem);
+	gap: 0.5rem 1rem;
+	align-items: center;
+	max-width: 40rem;
+}
+
+#otheraccounts form button {
+	grid-column: 2;
+	justify-self: start;
+}
+
+.otheraccounts-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.otheraccounts-address {
+	font-weight: bold;
+}
+
+.otheraccounts-kind,
+.otheraccounts-status {
+	color: var(--color-text-maxcontrast);
+}
+
+.otheraccounts-error {
+	color: var(--color-error);
+}
+
+.otheraccounts-ok {
+	color: var(--color-success);
+}
