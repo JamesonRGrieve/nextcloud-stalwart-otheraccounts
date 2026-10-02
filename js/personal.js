@@ -84,7 +84,7 @@
 
 	function mailboxSection(entry) {
 		const section = el('section', undefined, 'otheraccounts-mailbox');
-		section.appendChild(el('h4', entry.mailbox + (entry.own ? ' (your mailbox)' : ' (shared with you)')));
+		section.appendChild(el('h2', entry.mailbox + (entry.own ? ' (your mailbox)' : ' (shared with you)')));
 		if (entry.accounts.length === 0) {
 			section.appendChild(el('p', 'No accounts linked.', 'otheraccounts-status'));
 		} else {
@@ -110,9 +110,14 @@
 			if (selected && data.mailboxes.some((m) => m.mailbox === selected)) {
 				picker.value = selected;
 			}
+			showTarget();
 		} catch (e) {
 			flash(e.message, true);
 		}
+	}
+
+	function showTarget() {
+		document.getElementById('otheraccounts-target-name').textContent = targetMailbox() || 'the selected mailbox';
 	}
 
 	async function startGoogle(mailbox, email) {
@@ -131,6 +136,8 @@
 		} else if (params.has('error')) {
 			flash(params.get('error'), true);
 		}
+
+		document.getElementById('otheraccounts-mailbox').addEventListener('change', showTarget);
 
 		document.getElementById('otheraccounts-google').addEventListener('submit', (event) => {
 			event.preventDefault();

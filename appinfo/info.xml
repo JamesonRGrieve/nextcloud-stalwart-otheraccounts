@@ -6,7 +6,7 @@
     <name>Other Accounts</name>
     <summary>Connect your external mailboxes (Gmail, Google Workspace, IMAP) to your mailbox</summary>
     <description>Self-service enrollment of external mailboxes: sign in with Google or enter an IMAP login, and the account is two-way synced into "Other Accounts" in your mailbox, with send-as.</description>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     <licence>agpl</licence>
     <author>Jameson</author>
     <namespace>OtherAccounts</namespace>
@@ -15,9 +15,6 @@
         <php min-version="8.4"/>
         <nextcloud min-version="34" max-version="34"/>
     </dependencies>
-    <background-jobs>
-        <job>OCA\OtherAccounts\BackgroundJob\ConvergeJob</job>
-    </background-jobs>
     <settings>
         <personal>OCA\OtherAccounts\Settings\Personal</personal>
         <personal-section>OCA\OtherAccounts\Settings\PersonalSection</personal-section>

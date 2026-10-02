@@ -1,4 +1,34 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
+#otheraccounts h1 {
+	font-size: 1.4rem;
+	font-weight: bold;
+	margin: 1.5rem 0 0.75rem;
+}
+
+#otheraccounts h2 {
+	font-size: 1.1rem;
+	font-weight: bold;
+	margin: 1rem 0 0.5rem;
+}
+
+/* The connect forms hang off the mailbox picker: everything linked goes to the selected mailbox. */
+.otheraccounts-link {
+	max-width: 44rem;
+}
+
+.otheraccounts-target {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1rem;
+	align-items: center;
+}
+
+.otheraccounts-connections {
+	margin-left: 0.5rem;
+	padding-left: 1rem;
+	border-left: 3px solid var(--color-primary-element);
+}
+
 #otheraccounts form {
 	display: grid;
 	grid-template-columns: minmax(12rem, max-content) minmax(14rem, 24rem);
